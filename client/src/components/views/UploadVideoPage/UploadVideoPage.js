@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { Typography, Button, Form, message, Input, Icon } from 'antd';
+import { Typography, Button, Form, Progress, Input, Icon } from 'antd';
 import Dropzone from 'react-dropzone';
 import axios from 'axios';
 import { useSelector } from "react-redux";
+import './UploadVideoPage.css';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -30,6 +31,7 @@ function UploadVideoPage(props) {
     const [FilePath, setFilePath] = useState("")
     const [Duration, setDuration] = useState("")
     const [Thumbnail, setThumbnail] = useState("")
+    const [progress, setProgress] = useState(0)
 
 
     const handleChangeTitle = (event) => {
@@ -88,35 +90,65 @@ function UploadVideoPage(props) {
     }
 
     const onDrop = (files) => {
-
+        setThumbnail("")
         let formData = new FormData();
         const config = {
-            header: { 'content-type': 'multipart/form-data' }
+            header: { 'content-type': 'multipart/form-data' },
+            onUploadProgress: event =>{
+                const percent = Math.floor((event.loaded / event.total) * 100);
+                setProgress(percent);
+                // if (percent === 100) {
+                //     setTimeout(() => setProgress(0), 1000);
+                // }
+            },
+            // onDownloadProgress: progressEvent => {
+            //     const percentCompleted = Math.floor((progressEvent.loaded / progressEvent.total) * 100);
+            //     console.log(progressEvent.lengthComputable)
+            //     console.log(percentCompleted);
+            // }
         }
         console.log(files)
         formData.append("file", files[0])
+        // const reader = new FileReader()
 
+        // reader.onabort = () => console.log('file reading was aborted')
+        // reader.onerror = () => console.log('file reading has failed')
+        // reader.onload = () => {
+        // // Do whatever you want with the file contents
+        //   const binaryStr = reader.result
+        //   console.log(binaryStr)
+        // }
+
+        // reader.readAsArrayBuffer(file)
+
+        // axios.post("/api/video/uploadfiles", formData)
+        // .then(res => console.log(res))
+        // .catch(err => console.log(err))
         axios.post('/api/video/uploadfiles', formData, config)
             .then(response => {
+                console.log(formData)
                 if (response.data.success) {
-
-                    let variable = {
-                        filePath: response.data.filePath,
-                        fileName: response.data.fileName
-                    }
+                    // console.log(response)
+                    // let variable = {
+                    //     filePath: response.data.filePath,
+                    //     fileName: response.data.fileName
+                    // }
+                    setProgress(0)
                     setFilePath(response.data.filePath)
+                    setDuration(response.data.fileDuration)
+                    setThumbnail(response.data.thumbsFilePath)
 
                     //gerenate thumbnail with this filepath ! 
 
-                    axios.post('/api/video/thumbnail', variable)
-                        .then(response => {
-                            if (response.data.success) {
-                                setDuration(response.data.fileDuration)
-                                setThumbnail(response.data.thumbsFilePath)
-                            } else {
-                                alert('Failed to make the thumbnails');
-                            }
-                        })
+                    // axios.post('/api/video/thumbnail', variable)
+                    //     .then(response => {
+                    //         if (response.data.success) {
+                    //             setDuration(response.data.fileDuration)
+                    //             setThumbnail(response.data.thumbsFilePath)
+                    //         } else {
+                    //             alert('Failed to make the thumbnails');
+                    //         }
+                    //     })
 
 
                 } else {
@@ -139,7 +171,7 @@ function UploadVideoPage(props) {
                         multiple={false}
                         maxSize={800000000}>
                         {({ getRootProps, getInputProps }) => (
-                            <div style={{ width: '300px', height: '240px', border: '1px solid lightgray', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            <div className="dropzone-item" style={{ width: '300px', height: '240px', border: '1px solid lightgray', display: 'flex', alignItems: 'center', justifyContent: 'center', flexBasis: '100%' }}
                                 {...getRootProps()}
                             >
                                 <input {...getInputProps()} />
@@ -148,10 +180,22 @@ function UploadVideoPage(props) {
                             </div>
                         )}
                     </Dropzone>
+                    {progress > 0 &&
+                    <div className="dropzone-item thumbnail-status">
+                        <Progress type="circle" percent={progress} />
+                    </div>
+                    } 
+
+                    {/* <div>
+                        <img src={`${Thumbnail}`} alt="haha" />
+                    </div> */}
+                        {/* {Thumbnail !== "" ? <img src={`${Thumbnail}`} alt="haha" /> :null} */}
+
+                    
 
                     {Thumbnail !== "" &&
-                        <div>
-                            <img src={`http://localhost:5000/${Thumbnail}`} alt="haha" />
+                        <div className="dropzone-item thumbnail">
+                            <img src={`${Thumbnail}`} alt="thumbnail" />
                         </div>
                     }
                 </div>
